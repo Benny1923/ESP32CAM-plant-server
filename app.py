@@ -1,99 +1,89 @@
-import os, time
-from geventwebsocket import WebSocketServer, WebSocketError, WebSocketApplication, Resource
-from flask import Flask, request, render_template, abort ,jsonify
+from flask import Flask, request, render_template, abort ,jsonify,make_response,send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-
-
-app = Flask(__name__)
+import datetime
+app = Flask(__name__,static_url_path='/',static_folder='./static/dist')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/plant'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
-#esp32 last reponse time
-lastresponse = time.time()
-
-client = None
-class Task(db.Model):
+class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(70), unique=True)
-    description = db.Column(db.String(100))
-    def __init__(self, title, description):
-        self.title = title
-        self.description = description
+    timestamp = db.Column(db.DateTime, unique=True)
+    filename = db.Column(db.String(100))
+    def __init__(self, timestamp, filename):
+        self.timestamp = timestamp
+        self.filename = filename
+class Status(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime,unique=True)
+    moisture = db.Column(db.Integer)
+    tankfluid = db.Column(db.Integer)
+    online = db.Column(db.Boolean)
+    def __init__(self, timestamp, moisture,tankfluid,online):
+        self.timestamp = timestamp
+        self.moisture = moisture
+        self.tankfluid = tankfluid
+        self.online=online
+class plant_gif(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, unique=True)
+    filename = db.Column(db.String(100))
+    def __init__(self, timestamp, moisture,tankfluid,online):
+        self.timestamp = timestamp
+        self.filename = filename   
 db.create_all()
-class TaskSchema(ma.Schema):
+class PhotoSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'title', 'description')
-task_schema = TaskSchema()
-tasks_schema = TaskSchema(many=True)
-@app.route('/tasks', methods=['GET'])
-def get_tasks():
-  all_tasks = Task.query.all()
-  result = tasks_schema.dump(all_tasks)
-  return jsonify(result)
-
+        fields = ('id', 'timestamp', 'filename')
+class StatusSchema(ma.Schema):
+    class Meta:
+        fields = ('id', 'timestamp', 'moisture','tankfluid','online')
+class GifSchema(ma.Schema):
+    class Meta:
+        fields = ('id', 'timestamp','filename')
 @app.route('/')
+def indexhtm():
+    return send_from_directory('static/dist', 'index.html')
+@app.route('/api/photos/<path:path>')
+def sendjpg(path):
+    return send_from_directory('static/jpg', path)
+@app.route('/api/photos/list', methods=['GET'])
 def index():
-    return "Hello nothing there"
+    get_photos = Photo.query.all()
+    photo_schema = PhotoSchema(many=True)
+    photos = photo_schema.dump(get_photos)
+    return make_response(jsonify({"totoal":len(photos),"photos": photos}))
 
-@app.route('/api/status')
-def isonline():
-    global lastresponse
-    if ((time.time() - lastresponse) < 5):
-        return "online"
+def toDate(dateString): 
+    return datetime.datetime.strptime(dateString,"%Y-%m-%d-%H").date()
+@app.route('/api/status', methods=['GET'])
+def get_histroy(): 
+    start = request.args.get('start')
+    end = request.args.get('end')
+    if (start==None or end==None):
+        results = Status.query.all()
     else:
-        return "offline"
+        start = toDate(request.args.get('start'))
+        end = toDate(request.args.get('end'))
+        results = Status.query.filter(Status.timestamp>=start,Status.timestamp<=end).all()
+    status_schema = StatusSchema(many=True)
+    status = status_schema.dump(results)
+    return make_response(jsonify({"totoal":len(status), "logs": status}))
 
-@app.route('/api/manual')
-def all_manual():
-    op = request.args.get('op')
-    if (op == None):
-        return "error"
-    client.ws.send("hello")
-    return "nuke code sended"
-
-@app.route('/api/manual/<string:device>')
-def manual(device):
-    op = request.args.get('op')
-    if (op == None):
-        return "error"
-    if (device == "sprinklers"):
-        pass
-    elif (device == "light"):
-        pass
-    return "nuke code sended"
-
-@app.route('/api/ESP32/saveimg', methods=['POST'])
-def saveimg():
-    if request.files['img']:
-        file = request.files['img']
-        file.save(file.filename)
-        print("saveimg: {}".format(file.filename))
-        return "OK"
+def toDates(dateString): 
+    return datetime.datetime.strptime(dateString,"%Y-%m-%d").date()
+@app.route('/api/photos/gif',methods=['GET'])
+def get_gif():
+    date = request.args.get('date')
+    gif_schma = GifSchema(many=True)
+    if (date==None):
+        gif_results = plant_gif.query.all()
     else:
-        return "FAIL"
+        date = toDates(request.args.get('date'))
+        gif_results = plant_gif.query.filter(plant_gif.timestamp==date).all()
+    gifs =  gif_schma.dump(gif_results)
+    return make_response(jsonify({"gifs":gifs}))
 
-class ChatApplication(WebSocketApplication):
-    def on_open(self):
-        global lastresponse
-        print("client connected!")
-        lastresponse = time.time()
-    def on_message(self, message):
-        global lastresponse
-        global client
-        client = self
-        if (message not in "pong"):
-            print("message received!")
-            print(message)
-        lastresponse = time.time()
-    def on_close(self, reason):
-        print("Connection closed!")
-
-
-if __name__ == '__main__':
-    server = WebSocketServer(("0.0.0.0", 8080), Resource([
-        ('^/websocket', ChatApplication),
-        ('^/.*', app)
-    ]))
-    server.serve_forever()
+if __name__ == "__main__":
+    app.run(port=5000, host="0.0.0.0", use_reloader=False) 
