@@ -65,7 +65,6 @@ def get_photos():
     photos = photo_schema.dump(results.items)
     return make_response(jsonify({"totoal":len(photos),"hasnext":hasnext,"photos": photos}))
 #format日期格式
-
 def toDate(dateString): 
     return datetime.datetime.strptime(dateString,"%Y-%m-%d-%H").date()
 @app.route('/api/status', methods=['GET'])
@@ -89,7 +88,7 @@ def get_gif():
     date = request.args.get('date')
     gif_schma = GifSchema(many=True)
     if (date==None):
-    plant_gif.query.all()
+        gif_results = plant_gif.query.all()
     else:
         date = toDates(request.args.get('date'))
         gif_results = plant_gif.query.filter(plant_gif.timestamp==date).all()
