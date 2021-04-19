@@ -1,0 +1,8 @@
+#fake sensor data
+#you can change value anytime
+#then use command 1 send to server
+lux=10
+moisture=70
+tankfluid=65
+light-sw=1
+sprinklers_sw=0
