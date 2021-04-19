@@ -1,12 +1,12 @@
 from flask import Flask, request, render_template, abort ,jsonify,make_response,send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-import datetime
 app = Flask(__name__,static_url_path='/',static_folder='./static/dist')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/plant'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
+
 class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime, unique=True)
@@ -33,6 +33,7 @@ class plant_gif(db.Model):
         self.timestamp = timestamp
         self.filename = filename   
 db.create_all()
+
 class PhotoSchema(ma.Schema):
     class Meta:
         fields = ('id', 'timestamp', 'filename')
@@ -48,12 +49,22 @@ def indexhtm():
 @app.route('/api/photos/<path:path>')
 def sendjpg(path):
     return send_from_directory('static/jpg', path)
+
 @app.route('/api/photos/list', methods=['GET'])
-def index():
-    get_photos = Photo.query.all()
+def get_photos():
+    page = int(request.args.get('page'))
+    limit = int(request.args.get('limit'))
+    #page選擇頁數 per_page每頁有幾筆資料
+    results = Photo.query.order_by((Photo.timestamp).desc()).paginate(page, per_page=limit, error_out=False)
+    #假如有下一頁hasnext = True
+    if results.has_next:
+        hasnext = True
+    else:
+        hasnext = False
     photo_schema = PhotoSchema(many=True)
-    photos = photo_schema.dump(get_photos)
-    return make_response(jsonify({"totoal":len(photos),"photos": photos}))
+    photos = photo_schema.dump(results.items)
+    return make_response(jsonify({"totoal":len(photos),"hasnext":hasnext,"photos": photos}))
+#format日期格式
 
 def toDate(dateString): 
     return datetime.datetime.strptime(dateString,"%Y-%m-%d-%H").date()
@@ -70,7 +81,7 @@ def get_histroy():
     status_schema = StatusSchema(many=True)
     status = status_schema.dump(results)
     return make_response(jsonify({"totoal":len(status), "logs": status}))
-
+#format日期格式
 def toDates(dateString): 
     return datetime.datetime.strptime(dateString,"%Y-%m-%d").date()
 @app.route('/api/photos/gif',methods=['GET'])
@@ -78,7 +89,7 @@ def get_gif():
     date = request.args.get('date')
     gif_schma = GifSchema(many=True)
     if (date==None):
-        gif_results = plant_gif.query.all()
+    plant_gif.query.all()
     else:
         date = toDates(request.args.get('date'))
         gif_results = plant_gif.query.filter(plant_gif.timestamp==date).all()
