@@ -5,4 +5,4 @@ data stroage/processing server ,part of plant monitor project
 2.歷史資料
 3.相片列表
 4.相片資源
-5.GIF資源
+
