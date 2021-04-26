@@ -4,5 +4,5 @@
 lux=10
 moisture=70
 tankfluid=65
-light-sw=1
+light_sw=1
 sprinklers_sw=0

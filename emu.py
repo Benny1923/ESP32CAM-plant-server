@@ -54,6 +54,8 @@ def on_open(ws):
             for i in range(t):
                 ws.send("ping")
                 time.sleep(1)
+        elif cmd == 5:
+            break
 
 ws = WebSocketApp("ws://%s:8080/websocket"%server_addr,
                   on_message=Msgfunc,
