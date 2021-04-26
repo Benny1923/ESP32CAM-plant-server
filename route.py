@@ -50,7 +50,7 @@ class Esp32setting(Resource):
         result = plant_automatic.query.all()
         setting_schema = AutomaticSchema(many=True)
         data = setting_schema.dump(result)
-        return make_response(jsonify(setting))
+        return make_response(jsonify(data))
     def post(self):
         data = request.get_json()
         config = {}
