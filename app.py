@@ -2,6 +2,8 @@ from _init_ import app,db,api
 from geventwebsocket import WebSocketServer, Resource
 from esp32websocket import Esp32conns
 from route import Index,Sendingjpg,PhotoList,Status,Gif,Uploadimg,Esp32setting,Esp32manual
+from flask_cors import CORS
+CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://plant:plant@localhost/plant'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.create_all()
