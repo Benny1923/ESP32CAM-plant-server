@@ -5,7 +5,7 @@ import datetime, uuid
 from esp32websocket import Esp32cmd
 
 def toDate(dateString): 
-    return datetime.datetime.strptime(dateString,"%Y-%m-%d-%H").date()
+    return datetime.datetime.strptime(dateString,"%Y-%m-%d-%H")#將date()去掉
 class Index(Resource):
     def get(self):
         return send_from_directory('static/dist', 'index.html')
@@ -24,11 +24,12 @@ class Status(Resource):
         start = request.args.get('start')
         end = request.args.get('end')
         if (start==None or end==None):
-            results = plant_status.query.all()
+            results = plant_status.query.order_by((plant_status.timestamp).desc()).all()#修改排序由高到低
         else:
             start = toDate(request.args.get('start'))
             end = toDate(request.args.get('end'))
-            results = plant_status.query.filter(plant_status.timestamp>=start,plant_status.timestamp<=end).all()
+            results = plant_status.query.order_by((plant_status.timestamp)).filter(plant_status.timestamp>=start,plant_status.timestamp<=end).all()#增加orderby
+        print(start,end)
         status_schema = StatusSchema(many=True)
         status = status_schema.dump(results)
         return make_response(jsonify({"totoal":len(status), "logs": status, "online": Esp32cmd.isonline()}))
