@@ -10,7 +10,7 @@
       }
     ],
 
-    "start_url": "http://127.0.0.1:5000/",
+    "start_url": "http://127.0.0.1:8080/",
     "display": "standalone",
     "theme_color": "#317EFB",
     "background_color": "#ffffff"
