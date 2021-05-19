@@ -29,7 +29,6 @@ class Status(Resource):
             start = toDate(request.args.get('start'))
             end = toDate(request.args.get('end'))
             results = plant_status.query.order_by((plant_status.timestamp)).filter(plant_status.timestamp>=start,plant_status.timestamp<=end).all()#增加orderby
-        print(start,end)
         status_schema = StatusSchema(many=True)
         status = status_schema.dump(results)
         return make_response(jsonify({"totoal":len(status), "logs": status, "online": Esp32cmd.isonline()}))
