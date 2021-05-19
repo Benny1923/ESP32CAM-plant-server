@@ -24,6 +24,7 @@ def save_msg(msg):
 class Esp32cmd:
     #更新遠端設定
     def updatecfg(cfg):
+        global client
         cmd = {"op":"update", "config":cfg}
         client.ws.send(json.dumps(cmd))
     #檢查裝置上線狀態
