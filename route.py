@@ -12,6 +12,9 @@ class Index(Resource):
 class Sendingjpg(Resource):
     def get(self, path):
         return send_from_directory('static/jpg', path)
+class Sendinggif(Resource):
+    def get(self, path):
+        return send_from_directory('static/gif', path)
 class PhotoList(Resource):
     def get(self):
         limit = int(request.args.get('limit'))
